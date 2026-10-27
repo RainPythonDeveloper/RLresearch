@@ -1,0 +1,45 @@
+<section id="solution" data-transition="fade" style="background:#F4F2EC;color:#10161F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F;letter-spacing:2px;text-transform:uppercase">04 · Решение</p>
+<h2 style="font-family:Manrope, Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.1;max-width:1560px">Петля надёжности: от описания успеха до безопасного выпуска</h2>
+<div style="display:flex;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:16px;padding:28px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F">1</p>
+<h3 style="font-family:Manrope, Arial, sans-serif;font-size:32px;font-weight:700;line-height:1.15">Опиши успех</h3>
+<p style="font-size:24px;line-height:1.4;color:#3D4652">Словами, видео или кликом «успех / провал». Агент строит критерий и награду</p>
+</div>
+<x-connector style="width:48px;height:4px;align-self:center;color:#B8460F;border-width:3px" head="end"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:16px;padding:28px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F">2</p>
+<h3 style="font-family:Manrope, Arial, sans-serif;font-size:32px;font-weight:700;line-height:1.15">Проверь данные</h3>
+<p style="font-size:24px;line-height:1.4;color:#3D4652">«Доктор датасетов»: брак, дубликаты, мало эпизодов, плохие ракурсы</p>
+</div>
+<x-connector style="width:48px;height:4px;align-self:center;color:#B8460F;border-width:3px" head="end"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:16px;padding:28px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F">3</p>
+<h3 style="font-family:Manrope, Arial, sans-serif;font-size:32px;font-weight:700;line-height:1.15">Обучи</h3>
+<p style="font-size:24px;line-height:1.4;color:#3D4652">Имитация, дообучение VLA или RL — метод выбирается автоматически</p>
+</div>
+<x-connector style="width:48px;height:4px;align-self:center;color:#B8460F;border-width:3px" head="end"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:16px;padding:28px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F">4</p>
+<h3 style="font-family:Manrope, Arial, sans-serif;font-size:32px;font-weight:700;line-height:1.15">Докажи</h3>
+<p style="font-size:24px;line-height:1.4;color:#3D4652">Серии прогонов, доверительные интервалы, видео, сравнение версий</p>
+</div>
+<x-connector style="width:48px;height:4px;align-self:center;color:#B8460F;border-width:3px" head="end"></x-connector>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#10161F;border:1px solid #10161F;border-radius:16px;padding:28px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#FF8A4C">5</p>
+<h3 style="font-family:Manrope, Arial, sans-serif;font-size:32px;font-weight:700;line-height:1.15;color:#F4F2EC">Выпусти безопасно</h3>
+<p style="font-size:24px;line-height:1.4;color:#C9D2DC">Лестница автономии L0–L3, ограничители, e-stop, журнал версий</p>
+</div>
+</div>
+<div style="display:flex;gap:0">
+<div style="width:690px"></div>
+<div style="flex:1;display:flex;gap:20px;align-items:center;border:2px dashed #2F5FD0;border-radius:16px;padding:20px 28px">
+<x-icon name="Activity" style="width:40px;height:40px;color:#2F5FD0"></x-icon>
+<p style="font-size:26px;line-height:1.35;color:#10161F"><b>Петля улучшения:</b> коррекции оператора и логи эксплуатации → RL-доводка → новая проверенная версия</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1480px;font-size:24px;color:#5B6370">Источники: research/02 §8 (референсная архитектура), 10 §2.3 и §4.2, 11 §1</p>
+<p style="position:absolute;right:128px;bottom:64px;width:80px;text-align:right;font-size:24px;color:#5B6370">5</p>
+<aside>Пользователь не видит слово RL. Он описывает или показывает успех, а платформа выбирает метод: имитация (ACT), дообучение VLA (SmolVLA, π0.5) или RL (PPO в симуляции, HIL-RL на реальном роботе). Наше отличие — шаги 1, 2, 4 и 5: определение успеха, качество данных, доказательство и безопасный выпуск. Шаг 3 во многом уже бесплатен в open source.</aside>
+</section>

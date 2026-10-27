@@ -1,0 +1,22 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-27T06:31:00Z"},
+  "lists": "css",
+  "title": "No-code обучение роботов и агентов — Pitch Deck",
+  "order": ["cover", "problem", "whynow", "insight", "solution", "product", "stack", "market", "competition", "graveyard", "beachhead", "gtm", "model", "unit", "moat", "vision", "roadmap", "resources", "financials", "risks", "ideas", "knowns", "plan90", "ask"],
+  "sections": {
+    "s1": {"description": "Проблема и почему сейчас", "start": "cover"},
+    "s2": {"description": "Решение, продукт и технологический стек", "start": "solution"},
+    "s3": {"description": "Рынок, конкуренты и уроки закрытых проектов", "start": "market"},
+    "s4": {"description": "Клиенты, go-to-market и бизнес-модель", "start": "beachhead"},
+    "s5": {"description": "Видение масштаба, роадмап, ресурсы и финансы", "start": "vision"},
+    "s6": {"description": "Риски, идеи, честный статус и запрос", "start": "risks"}
+  },
+  "cover": "cover",
+  "faces": {
+    "manrope": {"family": "Manrope", "href": "https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"},
+    "jetbrains-mono": {"family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}

@@ -191,6 +191,10 @@
 
 ---
 
+## Pitch deck
+
+24 слайда по материалам этой папки: https://claude.ai/artifact/P7yKGkXxbsMofWwa6W9116 (исходники — `pitch-deck/`).
+
 ## Карта файлов
 
 | Файл | Что внутри |

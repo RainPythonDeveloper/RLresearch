@@ -1,0 +1,29 @@
+<section id="stack" data-transition="fade" style="background:#F4F2EC;color:#10161F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8460F;letter-spacing:2px;text-transform:uppercase">06 · Технологический стек</p>
+<h2 style="font-family:Manrope, Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.1;max-width:1560px">Мы не пишем модель и симулятор — мы строим слой над открытым стеком</h2>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;gap:32px;align-items:center;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:12px;padding:20px 32px">
+<p style="width:330px;font-family:Manrope, Arial, sans-serif;font-size:28px;font-weight:700">Интерфейс</p>
+<p style="flex:1;font-size:26px;color:#3D4652">Чат-агент · ассистенты через MCP (Claude, ChatGPT) · API · «открыть как код»</p>
+</div>
+<div style="display:flex;gap:32px;align-items:center;background:#10161F;border:1px solid #10161F;border-radius:12px;padding:20px 32px">
+<p style="width:330px;font-family:Manrope, Arial, sans-serif;font-size:28px;font-weight:700;color:#FF8A4C">Наш слой</p>
+<p style="flex:1;font-size:26px;color:#F4F2EC">Спецификация задачи · грейдер и награда · оценка · безопасность · деплой · журнал</p>
+</div>
+<div style="display:flex;gap:32px;align-items:center;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:12px;padding:20px 32px">
+<p style="width:330px;font-family:Manrope, Arial, sans-serif;font-size:28px;font-weight:700">Модели</p>
+<p style="flex:1;font-size:26px;color:#3D4652">ACT · Diffusion Policy · SmolVLA · π0.5 · GR00T · внешние API (Dream-1) — взаимозаменяемы</p>
+</div>
+<div style="display:flex;gap:32px;align-items:center;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:12px;padding:20px 32px">
+<p style="width:330px;font-family:Manrope, Arial, sans-serif;font-size:28px;font-weight:700">Движки</p>
+<p style="flex:1;font-size:26px;color:#3D4652">LeRobot · MuJoCo / MJWarp (Apache-2.0) · Isaac Lab (опция) · verl / TRL для LLM-агентов</p>
+</div>
+<div style="display:flex;gap:32px;align-items:center;background:#FBFAF6;border:1px solid #DDD8CC;border-radius:12px;padding:20px 32px">
+<p style="width:330px;font-family:Manrope, Arial, sans-serif;font-size:28px;font-weight:700">Железо</p>
+<p style="flex:1;font-size:26px;color:#3D4652">SO-101 · Unitree Go2 / G1 · Franka · UR · xArm · Jetson для edge-инференса</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1480px;font-size:24px;color:#5B6370">Источники: research/02 §2, §5, §9; лицензии — 02 §2.3, 05 §6 (ManiSkill NC, GR00T, Gemma, Llama)</p>
+<p style="position:absolute;right:128px;bottom:64px;width:80px;text-align:right;font-size:24px;color:#5B6370">7</p>
+<aside>Выбор базовой модели перестал быть стратегическим: LeRobot уже поддерживает почти все открытые VLA. Поэтому строим только тёмную полосу. Основной движок — MuJoCo/MJWarp (Apache-2.0); Isaac Sim как сервис — только после юридической проверки. Лицензионные ловушки: ассеты ManiSkill некоммерческие, веса GR00T под NVIDIA Open Model License, openpi с Gemma Terms, OpenVLA с Llama.</aside>
+</section>
