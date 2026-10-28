@@ -1,0 +1,627 @@
+<title>Как платформа учит робота</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; wide engineering diagrams scroll sideways on phones; swimlanes read left to right */
+:root {
+  --bg: #F2F4F3;
+  --surface: #FFFFFF;
+  --ink: #15202B;
+  --muted: #566573;
+  --line: #CDD5DB;
+  --ours: #2853C4;
+  --ours-ink: #FFFFFF;
+  --ours-tint: #DCE5FA;
+  --platform-tint: #E8EDF4;
+  --client-tint: #F8EDD3;
+  --robot-tint: #E3EAE5;
+  --safety: #8A5A00;
+  --safety-tint: #FBE6B0;
+  --stop: #B3261E;
+  --font-display: 'Unbounded', 'Golos Text', system-ui, sans-serif;
+  --font-body: 'Golos Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F151B; --surface: #172029; --ink: #E7ECEF; --muted: #9AA8B4; --line: #2E3B48;
+    --ours: #8AAAFF; --ours-ink: #0F151B; --ours-tint: #1C2B4D; --platform-tint: #19222D;
+    --client-tint: #2E2818; --robot-tint: #1C2621; --safety: #F2C14E; --safety-tint: #3A2F12; --stop: #FF7A70;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F151B; --surface: #172029; --ink: #E7ECEF; --muted: #9AA8B4; --line: #2E3B48;
+  --ours: #8AAAFF; --ours-ink: #0F151B; --ours-tint: #1C2B4D; --platform-tint: #19222D;
+  --client-tint: #2E2818; --robot-tint: #1C2621; --safety: #F2C14E; --safety-tint: #3A2F12; --stop: #FF7A70;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+}
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+section { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+h1, h2 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5vw, 52px); line-height: 1.12; }
+h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.2; }
+h3 { font-size: 19px; font-weight: 600; margin: 0; }
+p { margin: 0; }
+.eyebrow { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ours); }
+.lead { font-size: 20px; max-width: 62ch; color: var(--ink); }
+.note { color: var(--muted); max-width: 70ch; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* header */
+.head { display: flex; flex-direction: column; gap: 18px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 15px; }
+.toc a { color: var(--ours); text-decoration: none; border-bottom: 1px solid var(--ours-tint); }
+.toc a:hover, .toc a:focus-visible { border-bottom-color: var(--ours); outline: none; }
+
+/* input-output strip */
+.io { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 12px; }
+.io-cell { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.io-cell.ours { border-color: var(--ours); background: var(--ours-tint); }
+.io-cell h3 { font-size: 16px; }
+.io-cell ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 15.5px; }
+.io-arrow { align-self: center; color: var(--muted); font-size: 22px; }
+.tag { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+/* glossary */
+.gloss { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 0; }
+.gloss div { border-top: 2px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.gloss dt { font-weight: 600; }
+.gloss dd { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+/* two modes */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mode { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mode .price { font-family: var(--font-mono); font-size: 14px; color: var(--ours); }
+.mode p { font-size: 16px; }
+
+/* figures */
+figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.scroll svg { display: block; width: 100%; height: auto; min-width: 960px; }
+figcaption { color: var(--muted); font-size: 15px; max-width: 80ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+.sw.ours { background: var(--ours-tint); border-color: var(--ours); }
+.sw.safety { background: var(--safety-tint); border-color: var(--safety); }
+.sw.client { background: var(--client-tint); border-color: var(--line); }
+.sw.platform { background: var(--platform-tint); border-color: var(--line); }
+.sw.robot { background: var(--robot-tint); border-color: var(--line); }
+
+/* svg styling (page CSS reaches inline SVG) */
+svg text { font-family: var(--font-body); fill: var(--ink); font-size: 12.5px; }
+svg .t-b { font-weight: 600; font-size: 13px; }
+svg .t-m { fill: var(--muted); font-size: 11.5px; }
+svg .t-ours { fill: var(--ours-ink); font-weight: 600; font-size: 13px; }
+svg .t-acc { fill: var(--ours); font-weight: 600; font-size: 12px; }
+svg .lane-client { fill: var(--client-tint); }
+svg .lane-platform { fill: var(--platform-tint); }
+svg .lane-robot { fill: var(--robot-tint); }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+svg .box-q { fill: var(--surface); stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+svg .box-ours { fill: var(--ours-tint); stroke: var(--ours); stroke-width: 1.6; }
+svg .box-safety { fill: var(--safety-tint); stroke: var(--safety); stroke-width: 1.6; }
+svg .chip { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+svg .chip-ours { fill: var(--ours); stroke: var(--ours); }
+svg .group-ours { fill: var(--ours-tint); stroke: var(--ours); stroke-width: 1.6; }
+svg .group-oss { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 6 5; }
+svg .pill { fill: var(--surface); stroke: var(--muted); stroke-width: 1; }
+svg .ln { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+svg .ln-acc { stroke: var(--ours); stroke-width: 1.8; fill: none; }
+svg .mk { fill: var(--ink); }
+svg .mk-acc { fill: var(--ours); }
+
+/* step cards */
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; list-style: none; margin: 0; padding: 0; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0; scroll-margin-top: 24px; }
+.step.is-rl { border-color: var(--ours); }
+.step.is-safe { border-color: var(--safety); }
+.step-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.step-num { font-family: var(--font-mono); font-size: 14px; color: var(--muted); }
+.step .who { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.step p { font-size: 16px; }
+.step .out { font-size: 15px; border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.step .out b { font-weight: 600; }
+.badge { font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.badge.rl { color: var(--ours); }
+.badge.safe { color: var(--safety); }
+
+/* report mock */
+.report { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+.report-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.example { font-family: var(--font-mono); font-size: 12px; color: var(--stop); border: 1px solid var(--stop); border-radius: 999px; padding: 2px 10px; }
+.rows { display: flex; flex-direction: column; gap: 16px; }
+.row { display: grid; grid-template-columns: 170px 1fr 150px; gap: 14px; align-items: center; }
+.row .name { font-size: 15px; }
+.row .val { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
+.track { position: relative; height: 22px; background: var(--platform-tint); border-radius: 6px; }
+.ci { position: absolute; top: 4px; height: 14px; border-radius: 4px; background: var(--ours-tint); border: 1.5px solid var(--ours); }
+.pt { position: absolute; top: 0; width: 3px; height: 22px; background: var(--ours); transform: translateX(-1px); }
+.scale { display: grid; grid-template-columns: 170px 1fr 150px; gap: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.scale .ticks { position: relative; height: 16px; }
+.scale .ticks span { position: absolute; top: 0; transform: translateX(-50%); }
+.scale .ticks span:first-child { transform: none; }
+.scale .ticks span:last-child { transform: translateX(-100%); }
+.fails { display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.fails li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.fails ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.advice { background: var(--ours-tint); border-radius: 10px; padding: 14px 16px; font-size: 15.5px; }
+
+/* sales timeline */
+.sales { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.sales li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; position: relative; }
+.sales li.key { border-color: var(--ours); }
+.sales .when { font-family: var(--font-mono); font-size: 13px; color: var(--ours); }
+.sales .cost { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.sales p { font-size: 15px; }
+.stopcock { display: flex; gap: 12px; align-items: flex-start; border-left: 3px solid var(--stop); padding: 4px 0 4px 14px; max-width: 75ch; }
+
+footer { color: var(--muted); font-size: 14.5px; border-top: 1px solid var(--line); padding-top: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 860px) {
+  .io { grid-template-columns: 1fr; }
+  .io-arrow { transform: rotate(90deg); justify-self: center; }
+  .modes, .steps { grid-template-columns: 1fr; }
+  .sales { grid-template-columns: 1fr; }
+  .row, .scale { grid-template-columns: 1fr; gap: 6px; }
+  .row .val { text-align: left; }
+  .scale span:first-child, .scale span:last-child { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toc a { transition: border-color .15s ease; }
+}
+</style>
+
+<main class="page">
+
+  <header class="head">
+    <p class="eyebrow">Схема продукта · целевой вариант на первый год</p>
+    <h1>Как платформа учит робота</h1>
+    <p class="lead">Клиент объясняет, что считать успехом, и показывает задачу. Платформа сама учит робота, честно меряет результат и безопасно выпускает навык. Ниже весь путь, от первого слова клиента до робота, который работает.</p>
+    <nav class="toc" aria-label="Разделы">
+      <a href="#process">Весь процесс</a>
+      <a href="#steps">8 шагов подробно</a>
+      <a href="#rl">Где здесь RL</a>
+      <a href="#inside">Что внутри</a>
+      <a href="#report">Что видит клиент</a>
+      <a href="#sales">Как это продаётся</a>
+    </nav>
+  </header>
+
+  <section aria-labelledby="io-title">
+    <h2 id="io-title">Вход и выход</h2>
+    <div class="io">
+      <div class="io-cell">
+        <span class="tag">Клиент приносит</span>
+        <ul>
+          <li>Робота: SO-101, UR, Franka, xArm, Unitree</li>
+          <li>Задачу словами: «клади детали в лоток»</li>
+          <li>2–5 часов показа задачи оператором</li>
+        </ul>
+      </div>
+      <div class="io-arrow" aria-hidden="true">→</div>
+      <div class="io-cell ours">
+        <span class="tag">Платформа делает</span>
+        <ul>
+          <li>Проверяет данные</li>
+          <li>Сама выбирает метод и учит</li>
+          <li>Меряет надёжность, доводит</li>
+          <li>Выпускает под ограничителями</li>
+        </ul>
+      </div>
+      <div class="io-arrow" aria-hidden="true">→</div>
+      <div class="io-cell">
+        <span class="tag">Клиент получает</span>
+        <ul>
+          <li>Навык с измеренной надёжностью</li>
+          <li>Видео попыток и причины сбоев</li>
+          <li>Паспорт навыка для заказчика</li>
+          <li>Экспорт без привязки к нам</li>
+        </ul>
+      </div>
+    </div>
+    <dl class="gloss">
+      <div><dt>Политика</dt><dd>Обученная программа-навык: смотрит в камеры и решает, как двигать суставами.</dd></div>
+      <div><dt>Демонстрация</dt><dd>Один показ задачи: оператор ведёт робота, платформа записывает видео и движения.</dd></div>
+      <div><dt>Критерий успеха</dt><dd>Как понять, что попытка удалась. Из него платформа строит награду для обучения.</dd></div>
+      <div><dt>RL</dt><dd>Обучение на собственных попытках робота: удачные действия усиливаются, неудачные ослабевают.</dd></div>
+      <div><dt>Доверительный интервал</dt><dd>Честный разброс оценки: «86%, на самом деле где-то от 74% до 93%».</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="modes-title">
+    <h2 id="modes-title">Один продукт, два режима</h2>
+    <div class="modes">
+      <div class="mode">
+        <span class="tag">Сам в браузере</span>
+        <h3>Self-serve</h3>
+        <p class="price">Hobby $0 → Maker $19 → Pro $49 → Team $199 в месяц</p>
+        <p>Человек сам проходит те же шаги в браузере, с подсказками чат-агента. Цель — первая работающая политика за 60 минут на простом роботе. Для мейкеров, студентов и небольших команд.</p>
+      </div>
+      <div class="mode">
+        <span class="tag">С нашим инженером</span>
+        <h3>Платный пилот</h3>
+        <p class="price">$15–40 тыс. фикс · 6–10 недель · одна задача</p>
+        <p>Та же платформа, но клиента ведёт наш инженер по robot learning. Фиксированная цена, метрика приёмки в договоре и право остановиться на 4-й неделе. Для интеграторов, стартапов и лабораторий.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="process" aria-labelledby="process-title">
+    <h2 id="process-title">Весь процесс на одной схеме</h2>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1240 560" role="img" aria-label="Восемь шагов от цели до работы робота. Строки показывают, что делают клиент, платформа и робот. Нижняя строка — что получается на выходе. Шаги 5 и 6 повторяются, пока не достигнута цель, а журнал работы возвращает новые сбои в доводку.">
+          <defs>
+            <marker id="pm-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+            <marker id="pm-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-acc"/></marker>
+          </defs>
+
+          <!-- lanes -->
+          <rect x="8" y="120" width="1224" height="100" rx="12" class="lane-client"/>
+          <rect x="8" y="228" width="1224" height="100" rx="12" class="lane-platform"/>
+          <rect x="8" y="336" width="1224" height="100" rx="12" class="lane-robot"/>
+          <text x="24" y="166" class="t-b">Клиент</text><text x="24" y="184" class="t-m">человек</text>
+          <text x="24" y="274" class="t-b">Платформа</text><text x="24" y="292" class="t-m">автоматически</text>
+          <text x="24" y="382" class="t-b">Робот</text><text x="24" y="400" class="t-m">железо клиента</text>
+
+          <!-- highlighted cells: learning (4, 6) and safety (6, 7) -->
+          <rect x="548" y="232" width="128" height="92" rx="8" class="box-ours"/>
+          <rect x="820" y="232" width="128" height="92" rx="8" class="box-ours"/>
+          <rect x="820" y="340" width="128" height="92" rx="8" class="box-safety"/>
+          <rect x="956" y="340" width="128" height="92" rx="8" class="box-safety"/>
+
+          <!-- step chips -->
+          <a href="#step-1"><rect x="144" y="64" width="120" height="40" rx="20" class="chip"/><text x="204" y="89" text-anchor="middle" class="t-b">1 · Цель</text></a>
+          <a href="#step-2"><rect x="280" y="64" width="120" height="40" rx="20" class="chip"/><text x="340" y="89" text-anchor="middle" class="t-b">2 · Показ</text></a>
+          <a href="#step-3"><rect x="416" y="64" width="120" height="40" rx="20" class="chip"/><text x="476" y="89" text-anchor="middle" class="t-b">3 · Данные</text></a>
+          <a href="#step-4"><rect x="552" y="64" width="120" height="40" rx="20" class="chip-ours"/><text x="612" y="89" text-anchor="middle" class="t-ours">4 · Обучение</text></a>
+          <a href="#step-5"><rect x="688" y="64" width="120" height="40" rx="20" class="chip"/><text x="748" y="89" text-anchor="middle" class="t-b">5 · Проверка</text></a>
+          <a href="#step-6"><rect x="824" y="64" width="120" height="40" rx="20" class="chip-ours"/><text x="884" y="89" text-anchor="middle" class="t-ours">6 · Доводка</text></a>
+          <a href="#step-7"><rect x="960" y="64" width="120" height="40" rx="20" class="chip"/><text x="1020" y="89" text-anchor="middle" class="t-b">7 · Выпуск</text></a>
+          <a href="#step-8"><rect x="1096" y="64" width="120" height="40" rx="20" class="chip"/><text x="1156" y="89" text-anchor="middle" class="t-b">8 · Работа</text></a>
+
+          <!-- sequence arrows -->
+          <line x1="264" y1="84" x2="279" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="400" y1="84" x2="415" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="536" y1="84" x2="551" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="672" y1="84" x2="687" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="808" y1="84" x2="823" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="944" y1="84" x2="959" y2="84" class="ln" marker-end="url(#pm-a)"/>
+          <line x1="1080" y1="84" x2="1095" y2="84" class="ln" marker-end="url(#pm-a)"/>
+
+          <!-- loop 6 -> 5 -->
+          <path d="M884,64 Q816,14 750,62" class="ln-acc" marker-end="url(#pm-b)"/>
+          <text x="816" y="26" text-anchor="middle" class="t-acc">повтор, пока не цель</text>
+
+          <!-- client lane -->
+          <text x="204" y="156" text-anchor="middle"><tspan x="204">Говорит, что</tspan><tspan x="204" dy="15">такое успех:</tspan><tspan x="204" dy="15">текст, видео</tspan></text>
+          <text x="340" y="156" text-anchor="middle"><tspan x="340">Оператор ведёт</tspan><tspan x="340" dy="15">робота руками,</tspan><tspan x="340" dy="15">2–5 часов</tspan></text>
+          <text x="476" y="163" text-anchor="middle"><tspan x="476">Дозаписывает</tspan><tspan x="476" dy="15">по подсказке</tspan></text>
+          <text x="612" y="174" text-anchor="middle" class="t-m">—</text>
+          <text x="748" y="163" text-anchor="middle"><tspan x="748">Смотрит отчёт</tspan><tspan x="748" dy="15">и видео попыток</tspan></text>
+          <text x="884" y="156" text-anchor="middle"><tspan x="884">Исправляет</tspan><tspan x="884" dy="15">ошибки робота</tspan><tspan x="884" dy="15">по ходу работы</tspan></text>
+          <text x="1020" y="163" text-anchor="middle"><tspan x="1020">Подтверждает</tspan><tspan x="1020" dy="15">выпуск</tspan></text>
+          <text x="1156" y="163" text-anchor="middle"><tspan x="1156">Ставит новые</tspan><tspan x="1156" dy="15">задачи</tspan></text>
+
+          <!-- platform lane -->
+          <text x="204" y="264" text-anchor="middle"><tspan x="204">Чат-агент</tspan><tspan x="204" dy="15">составляет</tspan><tspan x="204" dy="15">паспорт задачи</tspan></text>
+          <text x="340" y="264" text-anchor="middle"><tspan x="340">Записывает</tspan><tspan x="340" dy="15">видео и углы</tspan><tspan x="340" dy="15">суставов</tspan></text>
+          <text x="476" y="264" text-anchor="middle"><tspan x="476">Ищет брак</tspan><tspan x="476" dy="15">и пробелы</tspan><tspan x="476" dy="15">в данных</tspan></text>
+          <text x="612" y="264" text-anchor="middle"><tspan x="612">Сама выбирает</tspan><tspan x="612" dy="15">метод и учит</tspan><tspan x="612" dy="15">на GPU</tspan></text>
+          <text x="748" y="264" text-anchor="middle"><tspan x="748">Считает успех</tspan><tspan x="748" dy="15">и интервал,</tspan><tspan x="748" dy="15">группирует сбои</tspan></text>
+          <text x="884" y="264" text-anchor="middle"><tspan x="884">Дообучает</tspan><tspan x="884" dy="15">на исправлениях</tspan><tspan x="884" dy="15">и попытках (RL)</tspan></text>
+          <text x="1020" y="264" text-anchor="middle"><tspan x="1020">Паспорт навыка,</tspan><tspan x="1020" dy="15">ограничители,</tspan><tspan x="1020" dy="15">экспорт</tspan></text>
+          <text x="1156" y="264" text-anchor="middle"><tspan x="1156">Собирает журнал,</tspan><tspan x="1156" dy="15">предлагает</tspan><tspan x="1156" dy="15">улучшения</tspan></text>
+
+          <!-- robot lane -->
+          <text x="204" y="390" text-anchor="middle" class="t-m">—</text>
+          <text x="340" y="379" text-anchor="middle"><tspan x="340">Повторяет руку</tspan><tspan x="340" dy="15">оператора</tspan></text>
+          <text x="476" y="390" text-anchor="middle" class="t-m">—</text>
+          <text x="612" y="379" text-anchor="middle"><tspan x="612" class="t-m">учится в облаке,</tspan><tspan x="612" dy="15" class="t-m">робот свободен</tspan></text>
+          <text x="748" y="379" text-anchor="middle"><tspan x="748">50 испытаний</tspan><tspan x="748" dy="15">на столе</tspan></text>
+          <text x="884" y="372" text-anchor="middle"><tspan x="884">Работает</tspan><tspan x="884" dy="15">медленнее, рядом</tspan><tspan x="884" dy="15">кнопка «стоп»</tspan></text>
+          <text x="1020" y="372" text-anchor="middle"><tspan x="1020">Получает навык</tspan><tspan x="1020" dy="15">под слоем</tspan><tspan x="1020" dy="15">безопасности</tspan></text>
+          <text x="1156" y="372" text-anchor="middle"><tspan x="1156">Выполняет</tspan><tspan x="1156" dy="15">задачу, пишет</tspan><tspan x="1156" dy="15">журнал</tspan></text>
+
+          <!-- outputs row -->
+          <text x="24" y="475" class="t-b">На выходе</text>
+          <rect x="142" y="456" width="124" height="28" rx="14" class="pill"/><text x="204" y="475" text-anchor="middle" class="t-m">паспорт задачи</text>
+          <rect x="278" y="456" width="124" height="28" rx="14" class="pill"/><text x="340" y="475" text-anchor="middle" class="t-m">датасет v1</text>
+          <rect x="414" y="456" width="124" height="28" rx="14" class="pill"/><text x="476" y="475" text-anchor="middle" class="t-m">датасет v2</text>
+          <rect x="550" y="456" width="124" height="28" rx="14" class="pill"/><text x="612" y="475" text-anchor="middle" class="t-m">политика v1</text>
+          <rect x="686" y="456" width="124" height="28" rx="14" class="pill"/><text x="748" y="475" text-anchor="middle" class="t-m">отчёт: 70%</text>
+          <rect x="822" y="456" width="124" height="28" rx="14" class="pill"/><text x="884" y="475" text-anchor="middle" class="t-m">v3 · 86%</text>
+          <rect x="958" y="456" width="124" height="28" rx="14" class="pill"/><text x="1020" y="475" text-anchor="middle" class="t-m">паспорт навыка</text>
+          <rect x="1094" y="456" width="124" height="28" rx="14" class="pill"/><text x="1156" y="475" text-anchor="middle" class="t-m">журнал работы</text>
+
+          <!-- loop 8 -> 6 -->
+          <path d="M1156,484 Q1020,544 886,486" class="ln-acc" marker-end="url(#pm-b)"/>
+          <text x="1020" y="536" text-anchor="middle" class="t-acc">новые сбои → снова доводка</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="sw client"></i>что делает клиент</span>
+        <span><i class="sw platform"></i>что платформа делает сама</span>
+        <span><i class="sw robot"></i>что происходит с роботом</span>
+        <span><i class="sw ours"></i>обучение, в том числе RL</span>
+        <span><i class="sw safety"></i>работа под ограничителями</span>
+      </div>
+      <figcaption>Клиент участвует в трёх местах: объясняет цель, показывает задачу и исправляет ошибки. Всё остальное платформа делает сама. Проценты в нижней строке — пример, а не результат.</figcaption>
+    </figure>
+  </section>
+
+  <section id="steps" aria-labelledby="steps-title">
+    <h2 id="steps-title">8 шагов подробно</h2>
+    <p class="note">Сроки указаны для платного пилота. В режиме self-serve простой навык на дешёвом роботе проходится за один вечер.</p>
+    <ol class="steps">
+      <li class="step" id="step-1">
+        <div class="step-head"><span class="step-num">01</span><h3>Цель</h3></div>
+        <span class="who">Клиент + чат-агент</span>
+        <p>Клиент словами и примерами объясняет, что считать успехом («деталь лежит в лотке ровно»), где границы зоны и какая скорость допустима. Агент задаёт уточняющие вопросы.</p>
+        <div class="out"><span><b>Выход:</b> паспорт задачи, профиль робота, протокол приёмки</span><span class="mono">неделя 1</span></div>
+      </li>
+      <li class="step" id="step-2">
+        <div class="step-head"><span class="step-num">02</span><h3>Показ</h3></div>
+        <span class="who">Оператор клиента + робот</span>
+        <p>Оператор ведёт робота пультом или второй «ведущей» рукой, робот повторяет движения. Платформа записывает видео с камер и положения суставов. На простой навык уходит 2–5 часов.</p>
+        <div class="out"><span><b>Выход:</b> датасет v1</span><span class="mono">недели 1–2</span></div>
+      </li>
+      <li class="step" id="step-3">
+        <div class="step-head"><span class="step-num">03</span><h3>Данные</h3></div>
+        <span class="who">Платформа</span>
+        <p>«Доктор датасетов» находит обрывы и дубли, нехватку разнообразия (все детали в одном месте) и плохие ракурсы. Затем говорит, что дозаписать.</p>
+        <div class="out"><span><b>Выход:</b> чистый датасет v2</span><span class="mono">недели 1–2</span></div>
+      </li>
+      <li class="step is-rl" id="step-4">
+        <div class="step-head"><span class="step-num">04</span><h3>Обучение</h3><span class="badge rl">IL · VLA · RL</span></div>
+        <span class="who">Платформа</span>
+        <p>Платформа сама выбирает метод и учит на облачных GPU в пределах бюджета. Награду строит из примеров «успех / провал» и проверяет, что робот её не «обманывает».</p>
+        <div class="out"><span><b>Выход:</b> политика v1</span><span class="mono">недели 2–4 · $1–130 compute</span></div>
+      </li>
+      <li class="step" id="step-5">
+        <div class="step-head"><span class="step-num">05</span><h3>Проверка</h3></div>
+        <span class="who">Робот + платформа</span>
+        <p>Серия из 50 испытаний в оговорённых условиях. Платформа считает долю успехов с доверительным интервалом, показывает видео каждой попытки и группирует сбои по причинам.</p>
+        <div class="out"><span><b>Выход:</b> отчёт проверки</span><span class="mono">недели 3–5</span></div>
+      </li>
+      <li class="step is-rl" id="step-6">
+        <div class="step-head"><span class="step-num">06</span><h3>Доводка</h3><span class="badge rl">RL</span></div>
+        <span class="who">Оператор + робот + платформа</span>
+        <p>Робот работает медленнее, оператор стоит у кнопки аварийной остановки и исправляет ошибки. Платформа дообучает политику на исправлениях и на попытках самого робота. После каждой версии — снова проверка.</p>
+        <div class="out"><span><b>Выход:</b> политика v2, v3… с растущей надёжностью</span><span class="mono">недели 4–7</span></div>
+      </li>
+      <li class="step is-safe" id="step-7">
+        <div class="step-head"><span class="step-num">07</span><h3>Выпуск</h3><span class="badge safe">L1 → L2</span></div>
+        <span class="who">Платформа + клиент</span>
+        <p>Навык ставится на ПК или Jetson рядом с роботом. Независимый слой безопасности ограничивает скорость, силу и зону. Сначала работа со сниженными лимитами, затем полные лимиты в ограждённой зоне.</p>
+        <div class="out"><span><b>Выход:</b> навык в работе, паспорт навыка, экспорт</span><span class="mono">недели 6–8</span></div>
+      </li>
+      <li class="step" id="step-8">
+        <div class="step-head"><span class="step-num">08</span><h3>Работа и улучшение</h3></div>
+        <span class="who">Робот + платформа</span>
+        <p>Робот выполняет задачу и пишет журнал. Новые сбои и исправления возвращаются в доводку. Клиент добавляет новые задачи на тех же роботах.</p>
+        <div class="out"><span><b>Выход:</b> журнал, новые версии</span><span class="mono">по подписке</span></div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="rl" aria-labelledby="rl-title">
+    <h2 id="rl-title">Где здесь RL</h2>
+    <p class="note">Пользователь не выбирает алгоритм. Платформа смотрит на задачу и данные и включает RL там, где он даёт прирост.</p>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1100 420" role="img" aria-label="Как платформа выбирает метод. Если задачу можно точно смоделировать, например ходьбу, — RL в симуляции. Если нет — обучение по показу. Затем проверка на 50 испытаниях. Если надёжность ниже цели — RL-доводка на роботе с оператором и новая проверка; если цель достигнута — выпуск.">
+          <defs>
+            <marker id="rl-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+            <marker id="rl-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-acc"/></marker>
+          </defs>
+          <rect x="10" y="170" width="130" height="70" rx="10" class="box"/>
+          <text x="75" y="201" text-anchor="middle" class="t-b">Задача</text>
+          <text x="75" y="219" text-anchor="middle">+ данные</text>
+
+          <rect x="170" y="162" width="165" height="86" rx="10" class="box-q"/>
+          <text x="252" y="192" text-anchor="middle"><tspan x="252">Можно точно</tspan><tspan x="252" dy="16">смоделировать</tspan><tspan x="252" dy="16">задачу?</tspan></text>
+
+          <rect x="375" y="40" width="210" height="86" rx="10" class="box-ours"/>
+          <text x="480" y="70" text-anchor="middle" class="t-b">RL в симуляции</text>
+          <text x="480" y="90" text-anchor="middle" class="t-m">ходьба, баланс;</text>
+          <text x="480" y="106" text-anchor="middle" class="t-m">минуты–часы на GPU</text>
+
+          <rect x="375" y="288" width="210" height="86" rx="10" class="box"/>
+          <text x="480" y="318" text-anchor="middle" class="t-b">Учится по показу</text>
+          <text x="480" y="338" text-anchor="middle" class="t-m">ACT или дообучение</text>
+          <text x="480" y="354" text-anchor="middle" class="t-m">VLA: SmolVLA, π0.5</text>
+
+          <rect x="620" y="170" width="150" height="70" rx="10" class="box"/>
+          <text x="695" y="200" text-anchor="middle" class="t-b">Проверка</text>
+          <text x="695" y="218" text-anchor="middle">50 испытаний</text>
+
+          <rect x="800" y="162" width="140" height="86" rx="10" class="box-q"/>
+          <text x="870" y="198" text-anchor="middle"><tspan x="870">Надёжность</tspan><tspan x="870" dy="16">≥ цели?</tspan></text>
+
+          <rect x="975" y="170" width="115" height="70" rx="10" class="box-safety"/>
+          <text x="1032" y="210" text-anchor="middle" class="t-b">Выпуск</text>
+
+          <rect x="700" y="318" width="220" height="86" rx="10" class="box-ours"/>
+          <text x="810" y="348" text-anchor="middle" class="t-b">RL-доводка на роботе</text>
+          <text x="810" y="368" text-anchor="middle" class="t-m">с оператором в контуре;</text>
+          <text x="810" y="384" text-anchor="middle" class="t-m">часы работы робота</text>
+
+          <line x1="140" y1="205" x2="169" y2="205" class="ln" marker-end="url(#rl-a)"/>
+          <polyline points="252,162 252,83 374,83" class="ln" marker-end="url(#rl-a)"/>
+          <text x="262" y="122" class="t-m">да</text>
+          <polyline points="252,248 252,331 374,331" class="ln" marker-end="url(#rl-a)"/>
+          <text x="262" y="295" class="t-m">нет</text>
+          <polyline points="585,83 695,83 695,169" class="ln" marker-end="url(#rl-a)"/>
+          <text x="640" y="75" text-anchor="middle" class="t-m">политика</text>
+          <polyline points="585,331 604,331 604,205 619,205" class="ln" marker-end="url(#rl-a)"/>
+          <line x1="770" y1="205" x2="799" y2="205" class="ln" marker-end="url(#rl-a)"/>
+          <line x1="940" y1="205" x2="974" y2="205" class="ln" marker-end="url(#rl-a)"/>
+          <text x="957" y="196" text-anchor="middle" class="t-m">да</text>
+          <line x1="870" y1="248" x2="870" y2="317" class="ln-acc" marker-end="url(#rl-b)"/>
+          <text x="880" y="288" class="t-acc">нет</text>
+          <polyline points="700,361 680,361 680,241" class="ln-acc" marker-end="url(#rl-b)"/>
+          <text x="672" y="296" text-anchor="end" class="t-acc"><tspan x="672">новая</tspan><tspan x="672" dy="15">версия</tspan></text>
+        </svg>
+      </div>
+      <figcaption>RL работает в двух местах: в симуляции, если задачу можно точно смоделировать (ходьба, баланс), и на реальном роботе, чтобы довести надёжность до цели. Манипуляцию обычно начинают с обучения по показу, потому что перенос из симуляции в реальность для неё пока ненадёжен.</figcaption>
+    </figure>
+  </section>
+
+  <section id="inside" aria-labelledby="inside-title">
+    <h2 id="inside-title">Что внутри и где что работает</h2>
+    <p class="note">Мы не пишем свой симулятор и свою большую модель. Мы строим слой, который превращает открытые инструменты в процесс «цель → навык → доказательство → безопасный выпуск».</p>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1100 460" role="img" aria-label="Слева то, что стоит у клиента: человек, ПК или Jetson со слоем безопасности и робот. Справа облако платформы: интерфейс, наш слой из шести модулей и готовые open-source движки с облачными GPU. Данные и журнал идут в облако, навык с ограничителями возвращается на ПК клиента.">
+          <defs>
+            <marker id="in-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+            <marker id="in-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-acc"/></marker>
+          </defs>
+          <!-- client side -->
+          <rect x="10" y="30" width="300" height="420" rx="16" class="lane-client"/>
+          <text x="30" y="58" class="t-b">У клиента</text>
+          <rect x="30" y="80" width="260" height="56" rx="10" class="box"/>
+          <text x="160" y="104" text-anchor="middle" class="t-b">Инженер или оператор</text>
+          <text x="160" y="122" text-anchor="middle" class="t-m">браузер, пульт показа</text>
+          <rect x="110" y="200" width="180" height="80" rx="10" class="box-safety"/>
+          <text x="200" y="228" text-anchor="middle" class="t-b">ПК или Jetson</text>
+          <text x="200" y="248" text-anchor="middle" class="t-m">навык + ограничители</text>
+          <text x="200" y="264" text-anchor="middle" class="t-m">скорости и силы</text>
+          <rect x="30" y="340" width="260" height="80" rx="10" class="box"/>
+          <text x="160" y="372" text-anchor="middle" class="t-b">Робот</text>
+          <text x="160" y="392" text-anchor="middle" class="t-m">SO-101, UR, Franka, Unitree</text>
+          <line x1="50" y1="136" x2="50" y2="339" class="ln" marker-end="url(#in-a)"/>
+          <text x="58" y="250" class="t-m">показ</text>
+          <line x1="160" y1="280" x2="160" y2="339" class="ln" marker-end="url(#in-a)"/>
+          <text x="152" y="315" text-anchor="end" class="t-m">команды</text>
+          <line x1="250" y1="340" x2="250" y2="281" class="ln" marker-end="url(#in-a)"/>
+          <text x="258" y="315" class="t-m">камеры</text>
+
+          <!-- cloud side -->
+          <rect x="430" y="30" width="660" height="420" rx="16" class="lane-platform"/>
+          <text x="450" y="58" class="t-b">Облако платформы</text>
+          <rect x="450" y="78" width="620" height="46" rx="10" class="box"/>
+          <text x="760" y="106" text-anchor="middle">Интерфейс: чат-агент · MCP для Claude и ChatGPT · API</text>
+
+          <rect x="450" y="150" width="620" height="150" rx="12" class="group-ours"/>
+          <text x="466" y="171" class="t-acc">Строим мы</text>
+          <rect x="465" y="182" width="190" height="48" rx="8" class="box"/><text x="560" y="211" text-anchor="middle">Паспорт задачи</text>
+          <rect x="670" y="182" width="190" height="48" rx="8" class="box"/><text x="765" y="211" text-anchor="middle">Грейдер и награда</text>
+          <rect x="875" y="182" width="190" height="48" rx="8" class="box"/><text x="970" y="211" text-anchor="middle">Оркестратор обучения</text>
+          <rect x="465" y="240" width="190" height="48" rx="8" class="box"/><text x="560" y="269" text-anchor="middle">Проверка и отчёты</text>
+          <rect x="670" y="240" width="190" height="48" rx="8" class="box"/><text x="765" y="269" text-anchor="middle">Безопасность и выпуск</text>
+          <rect x="875" y="240" width="190" height="48" rx="8" class="box"/><text x="970" y="269" text-anchor="middle">Версии и журнал</text>
+
+          <rect x="450" y="330" width="620" height="100" rx="12" class="group-oss"/>
+          <text x="466" y="351" class="t-m">Берём готовое: open source и облака</text>
+          <rect x="465" y="362" width="190" height="52" rx="8" class="box"/>
+          <text x="560" y="384" text-anchor="middle" class="t-b">Движки обучения</text>
+          <text x="560" y="402" text-anchor="middle" class="t-m">LeRobot, MuJoCo, Isaac Lab</text>
+          <rect x="670" y="362" width="190" height="52" rx="8" class="box"/>
+          <text x="765" y="384" text-anchor="middle" class="t-b">Модели</text>
+          <text x="765" y="402" text-anchor="middle" class="t-m">SmolVLA · π0.5 · GR00T</text>
+          <rect x="875" y="362" width="190" height="52" rx="8" class="box"/>
+          <text x="970" y="384" text-anchor="middle" class="t-b">Облачные GPU</text>
+          <text x="970" y="402" text-anchor="middle" class="t-m">арендуем по часам</text>
+
+          <line x1="715" y1="300" x2="715" y2="361" class="ln" marker-end="url(#in-a)"/>
+          <text x="707" y="321" text-anchor="end" class="t-m">задания</text>
+          <line x1="815" y1="361" x2="815" y2="301" class="ln" marker-end="url(#in-a)"/>
+          <text x="823" y="321" class="t-m">веса и метрики</text>
+
+          <!-- across the boundary -->
+          <line x1="290" y1="104" x2="449" y2="104" class="ln" marker-start="url(#in-a)" marker-end="url(#in-a)"/>
+          <text x="370" y="96" text-anchor="middle" class="t-m">задача, отчёты</text>
+          <line x1="290" y1="220" x2="449" y2="220" class="ln" marker-end="url(#in-a)"/>
+          <text x="370" y="212" text-anchor="middle" class="t-m">данные и журнал</text>
+          <line x1="450" y1="262" x2="291" y2="262" class="ln-acc" marker-end="url(#in-b)"/>
+          <text x="370" y="281" text-anchor="middle" class="t-acc">навык + лимиты</text>
+        </svg>
+      </div>
+      <figcaption>Тяжёлое обучение идёт в облаке на готовых открытых движках. У клиента работают только готовый навык и независимый слой безопасности: если связь пропадёт, робот всё равно остаётся под ограничителями. Синяя рамка — то, что мы строим и продаём.</figcaption>
+    </figure>
+  </section>
+
+  <section id="report" aria-labelledby="report-title">
+    <h2 id="report-title">Что видит клиент</h2>
+    <p class="note">Главное, за что платят, — честный отчёт после каждой версии. Так он мог бы выглядеть для задачи «укладка деталей в лоток».</p>
+    <div class="report">
+      <div class="report-top">
+        <div>
+          <span class="tag">Отчёт проверки</span>
+          <h3>Укладка деталей в лоток · 50 испытаний на версию</h3>
+        </div>
+        <span class="example">иллюстрация, не результат</span>
+      </div>
+      <div class="rows">
+        <div class="scale"><span></span><span class="ticks"><span style="left:0%">0%</span><span style="left:25%">25%</span><span style="left:50%">50%</span><span style="left:75%">75%</span><span style="left:100%">100%</span></span><span></span></div>
+        <div class="row">
+          <span class="name">v1 · только показ</span>
+          <div class="track" role="img" aria-label="Версия 1: 70 процентов, интервал от 56 до 81 процента">
+            <div class="ci" style="left:56%;width:25%"></div>
+            <div class="pt" style="left:70%"></div>
+          </div>
+          <span class="val">35/50 · 70% (56–81%)</span>
+        </div>
+        <div class="row">
+          <span class="name">v3 · после доводки</span>
+          <div class="track" role="img" aria-label="Версия 3: 86 процентов, интервал от 74 до 93 процентов">
+            <div class="ci" style="left:74%;width:19%"></div>
+            <div class="pt" style="left:86%"></div>
+          </div>
+          <span class="val">43/50 · 86% (74–93%)</span>
+        </div>
+      </div>
+      <div class="fails">
+        <span class="tag">Почему v3 ошибается (7 из 50)</span>
+        <ul>
+          <li><span>Блик на металлической детали</span><span class="mono">4</span></li>
+          <li><span>Деталь у самого края стола</span><span class="mono">2</span></li>
+          <li><span>Деталь выскользнула из захвата</span><span class="mono">1</span></li>
+        </ul>
+      </div>
+      <p class="advice"><b>Совет платформы:</b> рост вероятен, но интервалы v1 и v3 ещё пересекаются. Запишите 10 показов с бликующими деталями и проведите ещё 50 испытаний, чтобы подтвердить прирост.</p>
+    </div>
+  </section>
+
+  <section id="sales" aria-labelledby="sales-title">
+    <h2 id="sales-title">Как это продаётся</h2>
+    <ol class="sales">
+      <li><span class="when">30 минут</span><h3>Звонок</h3><p>Проверяем, подходят ли робот и задача. Если нет — предлагаем self-serve или честно отказываем.</p><span class="cost">$0</span></li>
+      <li><span class="when">1 неделя</span><h3>Диагностика</h3><p>По видео и демонстрациям даём отчёт: исходная надёжность, риски, план.</p><span class="cost">$0</span></li>
+      <li class="key"><span class="when">6–10 недель</span><h3>Пилот</h3><p>Шаги 1–7 на одной задаче. Фиксированная цена и метрика приёмки в договоре.</p><span class="cost">$15–40 тыс.</span></li>
+      <li><span class="when">неделя 8–10</span><h3>Приёмка</h3><p>Испытания по протоколу, передача всех результатов, обучение команды.</p><span class="cost">вторые 50%</span></li>
+      <li class="key"><span class="when">дальше</span><h3>Подписка</h3><p>Шаг 8: новые навыки, журнал, улучшения. Здесь основной бизнес.</p><span class="cost">$199/мес или $30–150 тыс./год</span></li>
+    </ol>
+    <div class="stopcock">
+      <p><b>Стоп-кран:</b> 50% оплаты на старте, 50% после приёмки. Если к 4-й неделе надёжность не растёт относительно исходной, клиент может остановить пилот и заплатить только первую часть.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Это целевой продукт первого года. Продукта пока нет: на старте часть шагов вручную делает наш инженер, а платформа забирает их по мере готовности.</p>
+    <p>Цены и сроки — оценки из исследования. Источники в репозитории RLresearch: research/13 (путь клиента), 10 (стратегия), 11 (функции), 02 (технологии).</p>
+  </footer>
+</main>
